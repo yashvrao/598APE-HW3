@@ -20,6 +20,8 @@ static void die(const char *s) {
 
 int N = 801;
 int **grid;
+int *row_start;
+int *row_end;
 
 // you can also use this function to debug print your sandpile
 static void render(char *filename) {
@@ -77,22 +79,19 @@ static void stabilize() {
   do {
     changed = 0;
     for (int i = 0; i < N; ++i) {
-      for (int j = 0; j <= MAX(i, N - 1 - i); ++j) {
-        if ((i - N / 2) * (i - N / 2) + (j - N / 2) * (j - N / 2) <=
-            (N / 2) * (N / 2)) {
-          if (grid[i][j] < 4)
-            continue;
-          changed = 1; // topple it
-          grid[i][j] -= 4;
-          if (i > 0)
-            grid[i - 1][j]++;
-          if (j > 0)
-            grid[i][j - 1]++;
-          if (i < N - 1)
-            grid[i + 1][j]++;
-          if (j < N - 1)
-            grid[i][j + 1]++;
-        }
+      for (int j = row_start[i]; j <= row_end[i]; ++j) {
+        if (grid[i][j] < 4)
+          continue;
+        changed = 1; // topple it
+        grid[i][j] -= 4;
+        if (i > 0)
+          grid[i - 1][j]++;
+        if (j > 0)
+          grid[i][j - 1]++;
+        if (i < N - 1)
+          grid[i + 1][j]++;
+        if (j < N - 1)
+          grid[i][j + 1]++;
       }
     }
   } while (changed);
@@ -119,6 +118,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
   char *end;
+  errno = 0;
   uintmax_t parsed = strtoumax(argv[1], &end, 10);
   if (errno || argv[1][0] < '0' || argv[1][0] > '9' || *end || !parsed ||
       parsed > INT32_MAX)
@@ -130,6 +130,23 @@ int main(int argc, char **argv) {
     grid[i] = (int *)malloc(N * sizeof(int));
   }
 
+  row_start = (int *)malloc(N * sizeof(int));
+  row_end = (int *)malloc(N * sizeof(int));
+  if (!row_start || !row_end)
+    die("malloc failed for row bounds");
+  for (int i = 0; i < N; ++i) {
+    row_start[i] = N;
+    row_end[i] = -1;
+    for (int j = 0; j <= MAX(i, N - 1 - i); ++j) {
+      if ((i - N / 2) * (i - N / 2) + (j - N / 2) * (j - N / 2) <=
+          (N / 2) * (N / 2)) {
+        if (row_start[i] == N)
+          row_start[i] = j;
+        row_end[i] = j;
+      }
+    }
+  }
+
   find_identity();
 
   render("identity.png");
@@ -137,5 +154,7 @@ int main(int argc, char **argv) {
     free(grid[i]);
   }
   free(grid);
+  free(row_start);
+  free(row_end);
   return EXIT_SUCCESS;
 }
