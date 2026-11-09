@@ -110,46 +110,39 @@ static void stabilize() {
   do {
     changed = 0;
     for (int i = 0; i <= center; ++i) {
-      int mirror = N - 1 - i;
       for (int j = row_start[i]; j <= row_end[i]; ++j) {
         if (grid[i][j] < 4)
           continue;
         changed = 1;
         int q = grid[i][j] / 4;
         grid[i][j] -= 4 * q;
-        if (i != mirror)
-          grid[mirror][j] -= 4 * q;
-
-        if (i > 0) {
+        if (i > 0)
           grid[i - 1][j] += q;
-          if (i != mirror)
-            grid[mirror + 1][j] += q;
-        }
-        if (i < center) {
-          if (i + 1 == mirror - 1)
-            grid[i + 1][j] += 2 * q;
-          else {
-            grid[i + 1][j] += q;
-            grid[mirror - 1][j] += q;
-          }
-        } else if (i < N - 1) {
-          grid[i + 1][j] += q;
-        }
-
-        if (j > 0) {
+        if (i < center)
+          grid[i + 1][j] += (i + 1 == center ? 2 : 1) * q;
+        if (j > 0)
           grid[i][j - 1] += q;
-          if (i != mirror)
-            grid[mirror][j - 1] += q;
-        }
-        if (j < N - 1) {
+        if (j < N - 1)
           grid[i][j + 1] += q;
-          if (i != mirror)
-            grid[mirror][j + 1] += q;
-        }
       }
     }
   } while (changed);
+
+  /* Restore every stored cell, including inactive sinks, before the next phase. */
+  for (int i = 0; i < center; ++i)
+    memcpy(grid[N - 1 - i], grid[i], (size_t)N * sizeof(*grid[i]));
 }
+
+#ifdef HW3_GRID_DUMP
+static void dump_grid(const char *path) {
+  FILE *f = fopen(path, "wb");
+  if (!f) die("failed to open grid dump");
+  for (int i = 0; i < N; ++i)
+    if (fwrite(grid[i], sizeof(*grid[i]), (size_t)N, f) != (size_t)N)
+      die("failed to write grid dump");
+  if (fclose(f)) die("failed to close grid dump");
+}
+#endif
 
 void find_identity() {
   for (int i = 0; i < N; ++i) {
@@ -158,12 +151,18 @@ void find_identity() {
     }
   }
   stabilize();
+#ifdef HW3_GRID_DUMP
+  dump_grid("phase1-grid.bin");
+#endif
   for (int i = 0; i < N; ++i) {
     for (int j = 0; j < N; ++j) {
       grid[i][j] = 6 - grid[i][j];
     }
   }
   stabilize();
+#ifdef HW3_GRID_DUMP
+  dump_grid("phase2-grid.bin");
+#endif
 }
 
 int main(int argc, char **argv) {
