@@ -74,7 +74,7 @@ static void render(char *filename) {
   free(pixels);
 }
 
-static void stabilize() {
+static void stabilize_full() {
   int changed = 0;
   do {
     changed = 0;
@@ -93,6 +93,59 @@ static void stabilize() {
           grid[i + 1][j] += q;
         if (j < N - 1)
           grid[i][j + 1] += q;
+      }
+    }
+  } while (changed);
+}
+
+
+static void stabilize() {
+  if (N % 2 == 0) {
+    stabilize_full();
+    return;
+  }
+
+  int center = N / 2;
+  int changed;
+  do {
+    changed = 0;
+    for (int i = 0; i <= center; ++i) {
+      int mirror = N - 1 - i;
+      for (int j = row_start[i]; j <= row_end[i]; ++j) {
+        if (grid[i][j] < 4)
+          continue;
+        changed = 1;
+        int q = grid[i][j] / 4;
+        grid[i][j] -= 4 * q;
+        if (i != mirror)
+          grid[mirror][j] -= 4 * q;
+
+        if (i > 0) {
+          grid[i - 1][j] += q;
+          if (i != mirror)
+            grid[mirror + 1][j] += q;
+        }
+        if (i < center) {
+          if (i + 1 == mirror - 1)
+            grid[i + 1][j] += 2 * q;
+          else {
+            grid[i + 1][j] += q;
+            grid[mirror - 1][j] += q;
+          }
+        } else if (i < N - 1) {
+          grid[i + 1][j] += q;
+        }
+
+        if (j > 0) {
+          grid[i][j - 1] += q;
+          if (i != mirror)
+            grid[mirror][j - 1] += q;
+        }
+        if (j < N - 1) {
+          grid[i][j + 1] += q;
+          if (i != mirror)
+            grid[mirror][j + 1] += q;
+        }
       }
     }
   } while (changed);
