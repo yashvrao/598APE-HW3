@@ -2,7 +2,9 @@
 
 This repository contains code for homework 3 of CS598APE. It is relatively
 simple in comparison to HW1 and HW2 to ensure you have enough time to work on
-the course project. 
+the course project.
+
+LOOK AT "artifact.md" FOR REPRODUCTION INSTRUCTIONS!
 
 `sandpile.c` contains the implementation of finding the identity element of a 2D
 abelian sandpile.
